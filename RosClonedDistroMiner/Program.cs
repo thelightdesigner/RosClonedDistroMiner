@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FuzzySharp;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -7,6 +8,7 @@ class Program
 {
     static void Main(string[] args)
     {
+
         string repoPath = @"C:\Users\stypl\development\crabscratch\rclcpp";
 
         ExecuteGitCommand(repoPath, "fetch --all");
@@ -14,9 +16,12 @@ class Program
         string branches = ExecuteGitCommand(repoPath, "branch -r");
         var branchList = branches.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        ExecuteGitCommand(repoPath, "checkout rolling");
+        string firstNewCommit = ExecuteGitCommand(repoPath, "merge-base jazzy rolling").Trim();
 
-        string commits = ExecuteGitCommand(repoPath, "log --pretty=\"format:%H %s\"");
+        ExecuteGitCommand(repoPath, "checkout jazzy");
+
+
+        string commits = ExecuteGitCommand(repoPath, $"log --pretty=\"format:%H %s\" {firstNewCommit}..HEAD");
 
         var commitList = commits.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
@@ -38,30 +43,28 @@ class Program
             if (bugKeywords.Any(keyword => commitMessage.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
             {
                 count++;
-                Console.WriteLine($"At: {commitHash} - {commitMessage}");
+               // Console.WriteLine($"At: {commitHash} - {commitMessage}");
                 string[] filesChanged = ExecuteGitCommand(repoPath, $"diff-tree --no-commit-id --name-only -r {commitHash}").Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 foreach (string file in filesChanged)
                 {
                     if (fileCounts.ContainsKey(file)) fileCounts[file]++;
-                    else fileCounts[file] = 0;
+                    else fileCounts[file] = 1;
                 }
             }
         }
 
-
-
         Console.WriteLine("------------Summary-------------");
-        var fileCountsSorted = fileCounts.ToList().OrderBy(pair => pair.Value);
+        var fileCountsSorted = fileCounts.ToList().OrderByDescending(pair => pair.Value);
 
         foreach (var entry in fileCountsSorted)
         {
-            Console.WriteLine($"{entry.Key} : {entry.Value}");
+            Console.Write($"{entry.Key} : {entry.Value}\n");
         }
     }
 
     static string ExecuteGitCommand(string repoPath, string command)
     {
-        var process = new Process
+        var process = new System.Diagnostics.Process
         {
             StartInfo = new ProcessStartInfo
             {
