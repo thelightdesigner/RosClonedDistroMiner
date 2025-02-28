@@ -48,6 +48,8 @@ class Program
             }
         }
 
+
+
         Console.WriteLine("------------Summary-------------");
         var fileCountsSorted = fileCounts.ToList().OrderBy(pair => pair.Value);
 
