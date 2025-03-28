@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace RosClonedDistroMiner
 {
-    class Commit
+    class CommitInfo
     {
         public Repository Repo;
         public string Message;
         public string Hash;
-        public Commit(string formatted, Repository repo)
+        public CommitInfo(string formatted, Repository repo)
         {
             var parts = formatted.Split(' ', 2);
             Hash = parts[0].Trim();
@@ -27,10 +27,12 @@ namespace RosClonedDistroMiner
 
         /// <summary>
         /// Gets a dictionary representation of the changes that this commit made to the whole project.
+        /// This method SUCKS! Don't use it!
         /// </summary>
         /// <returns></returns>
         public Dictionary<string, string> Changes()
         {
+            //Begin AI code
             var changesDict = new Dictionary<string, string>();
             //string output = Repo.ExecuteGitCommand($"show --pretty=format: --name-only {Hash}");
             string diffOutput = Repo.ExecuteGitCommand($"show {Hash}");
@@ -45,7 +47,7 @@ namespace RosClonedDistroMiner
                     changesDict[filePath] = string.Join("\n", lines.Skip(1));
                 }
             }
-
+            //End AI code
             return changesDict;
         }
 

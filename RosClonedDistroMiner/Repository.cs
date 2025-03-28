@@ -10,9 +10,11 @@ namespace RosClonedDistroMiner
     class Repository
     {
         public string Path;
-        public Repository(string path)
+        public string Name;
+        public Repository(string path, string name)
         {
             Path = path;
+            Name = name;
         }
         public string ExecuteGitCommand(string command)
         {
