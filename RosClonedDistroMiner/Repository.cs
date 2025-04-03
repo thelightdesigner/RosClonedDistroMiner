@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RosClonedDistroMiner
 {
-    class Repository
+    public class Repository
     {
         public string Path;
         public string Name;

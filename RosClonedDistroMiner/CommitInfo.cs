@@ -58,7 +58,7 @@ namespace RosClonedDistroMiner
 
         public override string ToString()
         {
-            return $"[{Hash.Substring(0, 5)}..] {Message}";
+            return $"[{Hash/*Hash.Substring(0, 5)*/}] {Message}";
         }
     }
 }

@@ -12,35 +12,62 @@ namespace RosClonedDistroMiner
         public const string OUTPUT_PATH = @"C:\Users\stypl\development\crabscratch\output.json";
         public const int COLUMN_WIDTH = 85;
 
-
         private static readonly List<MainlineBackportCommitPair> PatchesDataSet = new();
         static void Main(string[] args)
         {
+            string[] repos = ["rclcpp"];// new DirectoryInfo(REPO_PATH).GetDirectories().Select(dir => dir.Name).ToArray();
 
-            string[] repos = ["rclpy", "rclcpp", "rosidl_python", "rcpputils", "rpyutils"];
-            string[] compareAgainstBranches = ["jazzy", "humble"];
+            string[] compareAgainstBranches = ["jazzy"];//["jazzy", "humble", "foxy", "galactic", "iron"];
             string mainlineBranchName = "rolling";
+
+            List<Exception> errors = [];
 
             foreach (string repoName in repos)
             {
-                Repository rclpp = new Repository(Path.Combine(REPO_PATH, repoName), repoName);
-                rclpp.ExecuteGitCommand("fetch --all");
+                Repository repo = new Repository(Path.Combine(REPO_PATH, repoName), repoName);
+                repo.ExecuteGitCommand("fetch --all");
                 foreach (string branch in compareAgainstBranches)
                 {
-                    AnalyzeBranchPair(mainlineBranchName, branch, rclpp);
+                    try
+                    {
+                        AnalyzeBranchPair(mainlineBranchName, branch, repo);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.BackgroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"[ERROR] Error analyzing branch {branch} of {repo}.");
+                        Console.ResetColor();
+                        errors.Add(e);
+                    }
+                    
                 }
             }
-            
 
-/*
-            Console.WriteLine("How many backported commits are indistinguishable from the mainline commits?");
-            int identical = 0;
-            foreach(var dataPoint in dataSet)
+            var jsonOptions = new JsonSerializerOptions()
             {
-                if (dataPoint.Mainline.ModifiedFiles.Count == dataPoint.Backported.ModifiedFiles.Count) identical++;
-            }
-            Console.WriteLine(identical);
-*/
+                WriteIndented = true
+            };
+            jsonOptions.Converters.Add(new LineArrayJsonConverter());
+
+            Console.WriteLine("Writing data file...");
+            File.WriteAllText(OUTPUT_PATH, JsonSerializer.Serialize(PatchesDataSet, jsonOptions));
+
+            //Visualize data
+            foreach(MainlineBackportCommitPair dataPoint in PatchesDataSet) Console.WriteLine(dataPoint.ToString());
+
+            Console.WriteLine($"Total data points: {PatchesDataSet.Count}");
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Errors: {errors.Count}");
+            Console.ResetColor();
+            /*
+                        Console.WriteLine("How many backported commits are indistinguishable from the mainline commits?");
+                        int identical = 0;
+                        foreach(var dataPoint in dataSet)
+                        {
+                            if (dataPoint.Mainline.ModifiedFiles.Count == dataPoint.Backported.ModifiedFiles.Count) identical++;
+                        }
+                        Console.WriteLine(identical);
+            */
 
 
             //   int count = 0;
@@ -81,8 +108,8 @@ namespace RosClonedDistroMiner
 
 
             //Create lists of the mainline and fork to remove from.
-            List<CommitInfo> unmatchedCommitsForked = forkedCommits.ToArray().ToList();
-            List<CommitInfo> unmatchedCommitsMainline = mainlineCommits.ToArray().ToList();
+        //    List<CommitInfo> unmatchedCommitsForked = forkedCommits.ToArray().ToList();
+        //    List<CommitInfo> unmatchedCommitsMainline = mainlineCommits.ToArray().ToList();
 
             //List of backport data points
 
@@ -94,32 +121,25 @@ namespace RosClonedDistroMiner
             {
                 foreach (var mainlineCommit in mainlineCommits)
                 {
-                    // if (similarCount > 1) continue;
+                    if (similarCount > 0) continue;
                     if (Fuzz.Ratio(forkedCommit.CleanedMessage(), mainlineCommit.CleanedMessage()) > 95)
                     {
                         similarCount++;
                         Console.WriteLine("----------------------------------------------------------------------------------------------------------------------------------------------------------------");
                         Console.WriteLine($"{mainlineBranchName} \t{mainlineCommit}");
-                        Console.WriteLine($"{forkedBranchName} \t\t{forkedCommit}");
+                        Console.WriteLine($"{forkedBranchName} \t{forkedCommit}");
 
-                        PatchesDataSet.Add(new MainlineBackportCommitPair(mainlineCommit.Hash, forkedCommit.Hash, repo));
+                        PatchesDataSet.Add(new MainlineBackportCommitPair(mainlineCommit.Hash, forkedCommit.Hash, repo, true));
 
-                        unmatchedCommitsForked.Remove(forkedCommit);
-                        unmatchedCommitsMainline.Remove(mainlineCommit);
+                 //       unmatchedCommitsForked.Remove(forkedCommit);
+                   //     unmatchedCommitsMainline.Remove(mainlineCommit);
                     }
                 }
             }
+           // return;
+            
 
-            //Visualize data
-            //   foreach(MainlineBackportCommitPair dataPoint in dataSet) Console.WriteLine(dataPoint.ToString());
-
-            Console.WriteLine("Writing data file...");
-            File.WriteAllText(OUTPUT_PATH, JsonSerializer.Serialize(PatchesDataSet, new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            }));
-
-            Console.ForegroundColor = ConsoleColor.Magenta;
+         /*   Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine($"Similar count: {similarCount}");
             Console.WriteLine("----------------------------");
             Console.WriteLine($"{unmatchedCommitsForked.Count} Commits in {forkedBranchName} that couldn't be paired up to a commit in {mainlineBranchName}");
@@ -148,7 +168,7 @@ namespace RosClonedDistroMiner
             Console.WriteLine("----------------------------");
             Console.WriteLine($"{unmatchedCommitsMainline.Count} Commits in {mainlineBranchName} that couldn't be paired up to a commit in {forkedBranchName}");
 
-            Console.ResetColor();
+            Console.ResetColor();*/
         }
        
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static RosClonedDistroMiner.Commit;
 
 namespace RosClonedDistroMiner
 {
@@ -54,5 +55,6 @@ namespace RosClonedDistroMiner
             }
             return result.TrimEnd();
         }
+        
     }
 }
